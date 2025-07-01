@@ -55,6 +55,7 @@ O repositório contém os seguintes arquivos de entrada, localizados na pasta `d
 
 ## Estrutura Esperada do Projeto
 
+   ```bash
 atividade_orquestracao/
 ├── dags/ # Código do pipeline (caso use Airflow)
 ├── flows/ # Código do pipeline (caso use Prefect, Mage, etc.)
@@ -66,7 +67,7 @@ atividade_orquestracao/
 │ │ ├── final_table.parquet
 ├── requirements.txt
 └── README.md
----
+   ```
 
 ## Entrega Esperada
 
