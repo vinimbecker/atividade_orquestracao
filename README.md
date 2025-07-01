@@ -1,6 +1,6 @@
-# 🛠️ Atividade Prática: Orquestração de Pipelines com Dados JSON
+# Atividade Prática: Orquestração de Pipelines com Dados JSON
 
-## 🧠 Objetivo
+## Objetivo
 
 O objetivo desta atividade é praticar o uso de uma ferramenta de orquestração (como Apache Airflow, Prefect, Mage ou outras) para construir um pipeline simples com três etapas principais:
 
@@ -10,26 +10,26 @@ O objetivo desta atividade é praticar o uso de uma ferramenta de orquestração
 
 ---
 
-## 📁 Estrutura de Dados
+## Estrutura de Dados
 
 O repositório contém os seguintes arquivos de entrada, localizados na pasta `data/raw/`:
 
-- `listing_scrape.json`: contém os dados principais dos anúncios.
-- `listing_availability_scrape.json`: contém informações de disponibilidade dos anúncios.
+- `listing_scrape.json`.
+- `listing_availability_scrape.json`.
 
 ---
 
-## 🔁 Etapas do Pipeline
+## Etapas do Pipeline
 
 ### 1. Ingestão
 - Carregar os dois arquivos JSON brutos a partir do diretório `data/raw/`.
 
 ### 2. Transformação
 - Realizar um **join** (cruzamento) entre os dois conjuntos de dados.
-- A chave principal é o campo `listing_id`.
+
 
 ### 3. Geração da Tabela Final
-- Salvar os dados transformados em um novo arquivo no diretório `data/processed/` com o nome `final_table.parquet` (ou `.csv`, se preferir).
+- Salvar os dados transformados em um novo arquivo no diretório `data/processed/` com o nome `final_table.parquet`.
 
 ---
 
@@ -43,7 +43,7 @@ O repositório contém os seguintes arquivos de entrada, localizados na pasta `d
 
 ---
 
-## 🚀 Sugestão de Ferramentas
+## Sugestão de Ferramentas
 
 - [Apache Airflow](https://airflow.apache.org/)
 - [Prefect](https://www.prefect.io/)
@@ -53,7 +53,7 @@ O repositório contém os seguintes arquivos de entrada, localizados na pasta `d
 
 ---
 
-## 📦 Estrutura Esperada do Projeto
+## Estrutura Esperada do Projeto
 
 atividade_orquestracao/
 ├── dags/ # Código do pipeline (caso use Airflow)
@@ -68,25 +68,14 @@ atividade_orquestracao/
 └── README.md
 ---
 
-## ✅ Entrega Esperada
+## Entrega Esperada
 
 - Um repositório com o pipeline funcionando e instruções de execução no `README.md`;
 - O script ou DAG deve ser facilmente executável;
 - Inclua prints ou outputs mostrando o sucesso da execução e o arquivo final gerado.
 
----
 
-## 📚 Referências e Inspiração
-
-- Pipelines ELT com Airflow: [Link]
-- Prefect Flows com arquivos locais: [Link]
-- Transformações com pandas e joins em JSON: [Link]
-
----
-
----
-
-## 🔄 Como Começar: Fork e Configuração Local
+## Como Começar: Fork e Configuração Local
 
 1. **Fork este repositório** para sua conta GitHub:
    - Clique no botão **Fork** no canto superior direito da página.
