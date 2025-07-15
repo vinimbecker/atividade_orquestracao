@@ -21,33 +21,47 @@ class Logger:
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(line + "\n")
 
-def process_json_to_parquet(file_input, file_output, logger):
-    if not os.path.exists(file_input):
-        logger.log(f"Arquivo de entrada '{file_input}' não encontrado!", level="ERROR")
-        raise FileNotFoundError(f"Arquivo ausente: {file_input}")
+import glob
 
-    logger.log(f"Lendo JSON transformado de '{file_input}'...")
+def process_json_to_parquet(folder_input, file_output, logger):
+    if not os.path.exists(folder_input):
+        logger.log(f"Pasta de entrada '{folder_input}' não encontrada!", level="ERROR")
+        raise FileNotFoundError(f"Pasta ausente: {folder_input}")
+
+    logger.log(f"Lendo arquivos JSON da pasta '{folder_input}'...")
     try:
-        with open(file_input, "r", encoding="utf-8") as f:
-            dados = json.load(f)
+        files = glob.glob(os.path.join(folder_input, "part-*.json"))
 
-        df = pd.json_normalize(dados)
-        logger.log("JSON convertido em DataFrame.")
+        if not files:
+            logger.log(f"Nenhum arquivo JSON encontrado na pasta '{folder_input}'!", level="ERROR")
+            raise ValueError("Pasta de entrada vazia ou sem arquivos part-*.json")
+
+        dfs = []
+        for f in files:
+            with open(f, "r", encoding="utf-8") as f_in:
+                # Pode haver múltiplos registros por arquivo
+                for line in f_in:
+                    obj = json.loads(line)
+                    dfs.append(obj)
+
+        df = pd.json_normalize(dfs)
+        logger.log("Arquivos combinados em DataFrame.")
 
         os.makedirs(os.path.dirname(file_output), exist_ok=True)
         df.to_parquet(file_output, index=False)
 
         logger.log(f"Arquivo Parquet salvo em: '{file_output}'")
     except Exception as e:
-        logger.log(f"Falha ao processar/gerar parquet do arquivo: {e}", level="ERROR")
+        logger.log(f"Falha ao processar/gerar Parquet: {e}", level="ERROR")
         raise
+
 
 # Exemplo de uso
 if __name__ == "__main__":
     logger = Logger()
 
-    input = "data/tmp/transformed_data.json"
-    output = "data/processed/final_data.parquet"
+    input_folder = "data/tmp/transformed_data"  # Agora é uma pasta, não um arquivo
+    output_file = "data/processed/final_data.parquet"
 
-    process_json_to_parquet(input, output, logger)
+    process_json_to_parquet(input_folder, output_file, logger)
     logger.log("Finalizado.")

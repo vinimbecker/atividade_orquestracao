@@ -3,6 +3,12 @@ import os
 import sys
 from datetime import datetime
 
+from pyspark.sql import SparkSession
+
+from pyspark.sql.functions import lit, col, udf
+
+from pyspark.sql.types import StringType
+
 class Logger:
     def __init__(self, prefix="transformacao"):
         log_file_path = os.path.join("logs", "transformacao")
@@ -30,12 +36,28 @@ def transform_data(announcement, availability, output, logger):
             logger.log(f"Arquivo de disponibilidade de datas não encontrado: {availability}", level="ERROR")
             raise FileNotFoundError(f"Disponibilidade de datas ausente: {availability}")
 
-        logger.log("Carregando arquivos JSON...")
-        with open(announcement, "r", encoding="utf-8") as f1, open(availability, "r", encoding="utf-8") as f2:
-            announcement_info = json.load(f1)
-            availability_info = json.load(f2)
+        logger.log("Iniciando sessão Spark...")
 
-        logger.log("Extraindo metadados do anúncio...")
+        spark = SparkSession.builder.appName("TransformData").getOrCreate()
+
+        logger.log("Carregando arquivos JSON...")
+
+        with open(announcement, "r", encoding="utf-8") as f:
+            announcement_info = json.load(f)
+
+        with open(availability, "r", encoding="utf-8") as f:
+            availability_raw = json.load(f)
+
+        # Extrair a lista de datas e salvar como JSON lines
+        listing_dates = availability_raw.get("listing_dates", [])
+        temp_file = "availability_spark_ready.json"
+
+        with open(temp_file, "w", encoding="utf-8") as f_out:
+            for item in listing_dates:
+                f_out.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+        logger.log("Preparando metadados do anúncio...")
+
         info = {
             "airbnb_id": announcement_info.get("id"),
             "name": announcement_info.get("name"),
@@ -47,23 +69,31 @@ def transform_data(announcement, availability, output, logger):
             "price_native": announcement_info.get("price_native")
         }
 
-        logger.log("Gerando linhas com os dados de disponibilidade de datas...")
-        availability_date_table = []
-        for item in availability_info.get("listing_dates", []):
-            registry = {
-                "date": item.get("date"),
-                "availability": item.get("availability"),
-                "min_stay": item.get("min_stay"),
-                "pricing_type": item.get("pricing_type", {}).get("string")
-            }
-            registry.update(info)
-            availability_date_table.append(registry)
+        df_info = spark.createDataFrame([info])
+
+        logger.log("Carregando disponibilidade no formato Spark compatível...")
+
+        df_availability = spark.read.json(temp_file)
+
+        get_pricing_type = udf(lambda x: x.get("string") if isinstance(x, dict) else None, StringType())
+
+        df_availability = df_availability.withColumn("pricing_type", get_pricing_type(col("pricing_type")))
+
+        logger.log("Realizando junção cruzada...")
+
+        df_final = df_availability.crossJoin(df_info)
+
+        logger.log("Salvando resultado em JSON...")
 
         os.makedirs(os.path.dirname(output), exist_ok=True)
-        with open(output, "w", encoding="utf-8") as f_out:
-            json.dump(availability_date_table, f_out, ensure_ascii=False, indent=2)
+        df_final.coalesce(1).write.mode("overwrite").json(output)
 
         logger.log(f"Arquivo salvo com sucesso: {output}")
+        spark.stop()
+
+        # Limpando arquivo temporário
+        os.remove(temp_file)
+
     except Exception as e:
         logger.log(f"Falha durante a transformação dos dados: {e}", level="ERROR")
         raise
@@ -74,7 +104,7 @@ if __name__ == "__main__":
     base = "data/tmp"
     announcement = os.path.join(base, "announcement_data.json")
     availability = os.path.join(base, "availability_data.json")
-    output = os.path.join(base, "transformed_data.json")
+    output = os.path.join(base, "transformed_data")
 
     transform_data(announcement, availability, output, logger)
     logger.log("Transformação dos dados finalizada.")
