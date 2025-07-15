@@ -50,11 +50,16 @@ def transform_data(announcement, availability, output, logger):
 
         # Extrair a lista de datas e salvar como JSON lines
         listing_dates = availability_raw.get("listing_dates", [])
+        logger.log(f"Nº de datas encontradas: {len(listing_dates)}")
+
         temp_file = "availability_spark_ready.json"
 
         with open(temp_file, "w", encoding="utf-8") as f_out:
             for item in listing_dates:
                 f_out.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+        logger.log(f"{len(listing_dates)} linhas salvas em {temp_file}")
+        
 
         logger.log("Preparando metadados do anúncio...")
 
@@ -75,12 +80,11 @@ def transform_data(announcement, availability, output, logger):
 
         df_availability = spark.read.json(temp_file)
 
-        get_pricing_type = udf(lambda x: x.get("string") if isinstance(x, dict) else None, StringType())
-
-        df_availability = df_availability.withColumn("pricing_type", get_pricing_type(col("pricing_type")))
+        logger.log(f"Nº de datas carregadas: {df_availability.count()}")
 
         logger.log("Realizando junção cruzada...")
 
+        logger.log(f"Colunas: {df_availability.columns}")
         df_final = df_availability.crossJoin(df_info)
 
         logger.log("Salvando resultado em JSON...")
